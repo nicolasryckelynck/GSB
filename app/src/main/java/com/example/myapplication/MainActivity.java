@@ -1,27 +1,28 @@
 package com.example.myapplication;
 
 import androidx.appcompat.app.AppCompatActivity;
-import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import org.json.JSONException;
 import org.json.JSONObject;
+
 import java.util.HashMap;
 import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
     EditText username, password;
     Button login;
-    ProgressDialog progressDialog;
+    ProgressBar progressBar;
     RequestQueue requestQueue;
 
     private static final String LOGIN_URL = "https://trincal.alwaysdata.net/api/login.php";
@@ -34,23 +35,20 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
         username = findViewById(R.id.username);
         password = findViewById(R.id.password);
         login = findViewById(R.id.login);
-        progressDialog = new ProgressDialog(this);
-        progressDialog.setMessage("Logging in... Please wait.");
-        progressDialog.setCancelable(false);
+        progressBar = findViewById(R.id.login_progress);
         requestQueue = Volley.newRequestQueue(this);
+
         login.setOnClickListener(v -> {
-            String userVar = username.getText().toString();
-            String passVar = password.getText().toString();
-            if (userVar.isEmpty()) {
-                Toast.makeText(getApplicationContext(), "Username cannot be blank",
-                        Toast.LENGTH_SHORT).show();
-            } else if (passVar.isEmpty()) {
-                Toast.makeText(getApplicationContext(), "Password cannot be blank",
-                        Toast.LENGTH_SHORT).show();
+            String userVar = username.getText().toString().trim();
+            String passVar = password.getText().toString().trim();
+            if (userVar.isEmpty() || passVar.isEmpty()) {
+                Toast.makeText(getApplicationContext(), "Username and Password cannot be blank", Toast.LENGTH_SHORT).show();
             } else {
+                progressBar.setVisibility(View.VISIBLE); // Show the ProgressBar
                 loginRequest(userVar, passVar);
             }
         });
@@ -59,37 +57,29 @@ public class MainActivity extends AppCompatActivity {
     private void loginRequest(String userVar, String passVar) {
         StringRequest stringRequest = new StringRequest(Request.Method.POST, LOGIN_URL,
                 response -> {
-                    progressDialog.dismiss();
+                    progressBar.setVisibility(View.GONE); // Hide the ProgressBar
                     try {
-                        JSONObject jsonObject = new JSONObject(response);
-                        if (jsonObject.has(STATUS) && jsonObject.getInt(STATUS) == SUCCESS_STATUS) {
-                            Toast.makeText(MainActivity.this, "Login successful", Toast.LENGTH_SHORT).show();
-                            Intent intent = new Intent(MainActivity.this, PostLoginActivity.class);
-
-                            // Extract user data from the response
-                            String utilisateur = jsonObject.toString();
-                            // String numero = utilisateur.getString("numero");
-                            //String adresse = utilisateur.getString("adresse");
-                            //String email = utilisateur.getString("email");
-
-                            // Pass user data to PostLoginActivity
-                            //  intent.putExtra("numero", numero);
-                            // intent.putExtra("adresse", adresse);
-                            intent.putExtra(EXTRA_MESSAGE, utilisateur);
-
-                            startActivity(intent);
+                        if (response != null && !response.trim().isEmpty()) {
+                            JSONObject jsonObject = new JSONObject(response.trim());
+                            if (jsonObject.has(STATUS) && jsonObject.getInt(STATUS) == SUCCESS_STATUS) {
+                                Toast.makeText(MainActivity.this, "Login successful", Toast.LENGTH_SHORT).show();
+                                Intent intent = new Intent(MainActivity.this, PostLoginActivity.class);
+                                String message = jsonObject.toString();
+                                intent.putExtra(EXTRA_MESSAGE, message);
+                                startActivity(intent);
+                            } else {
+                                Toast.makeText(MainActivity.this, "Incorrect username or password", Toast.LENGTH_LONG).show();
+                            }
                         } else {
-                            Toast.makeText(MainActivity.this, "Incorrect username or password",
-                                    Toast.LENGTH_LONG).show();
+                            Toast.makeText(MainActivity.this, "Empty server response", Toast.LENGTH_LONG).show();
                         }
                     } catch (JSONException e) {
                         e.printStackTrace();
-                        Toast.makeText(MainActivity.this, "Failed to parse server response",
-                                Toast.LENGTH_LONG).show();
+                        Toast.makeText(MainActivity.this, "Failed to parse server response", Toast.LENGTH_LONG).show();
                     }
                 },
                 error -> {
-                    progressDialog.dismiss();
+                    progressBar.setVisibility(View.GONE); // Hide the ProgressBar
                     Toast.makeText(MainActivity.this, "Failed to connect to server. Please check your internet connection and try again.", Toast.LENGTH_LONG).show();
                 }) {
             @Override
@@ -100,7 +90,6 @@ public class MainActivity extends AppCompatActivity {
                 return params;
             }
         };
-        progressDialog.show();
         requestQueue.add(stringRequest);
     }
 }
