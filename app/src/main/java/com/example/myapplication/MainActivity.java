@@ -65,9 +65,19 @@ public class MainActivity extends AppCompatActivity {
                         if (jsonObject.has(STATUS) && jsonObject.getInt(STATUS) == SUCCESS_STATUS) {
                             Toast.makeText(MainActivity.this, "Login successful", Toast.LENGTH_SHORT).show();
                             Intent intent = new Intent(MainActivity.this, PostLoginActivity.class);
-                            String message = jsonObject.toString();
-                            intent.putExtra(EXTRA_MESSAGE, message);
-                            startActivityForResult(intent, 1);
+
+                            // Extract user data from the response
+                            String utilisateur = jsonObject.toString();
+                            // String numero = utilisateur.getString("numero");
+                            //String adresse = utilisateur.getString("adresse");
+                            //String email = utilisateur.getString("email");
+
+                            // Pass user data to PostLoginActivity
+                            //  intent.putExtra("numero", numero);
+                            // intent.putExtra("adresse", adresse);
+                            intent.putExtra(EXTRA_MESSAGE, utilisateur);
+
+                            startActivity(intent);
                         } else {
                             Toast.makeText(MainActivity.this, "Incorrect username or password",
                                     Toast.LENGTH_LONG).show();
@@ -93,5 +103,4 @@ public class MainActivity extends AppCompatActivity {
         progressDialog.show();
         requestQueue.add(stringRequest);
     }
-
 }
